@@ -42,8 +42,7 @@
                         <s-heading>Ready to boost your sales from ChatGPT?</s-heading>
                         <s-paragraph>
                             @{{ message }}
-                            Start by generating your LLMs.txt file that helps chat bots discover your website and
-                            products.
+                            
                         </s-paragraph>
                         <s-stack direction="inline" gap="small-200">
                             <s-button variant="primary" :loading="isLoading" @click="generate()"> Generate </s-button>
@@ -71,7 +70,7 @@
     data() {
       return {
         state: 'init',
-        message: 'Hello world'
+        message: 'Start by generating your LLMs.txt file that helps chat bots discover your website and products.'
       }
     },
     computed: {
@@ -85,24 +84,27 @@
             this.state = 'loading';
 
             try {
-            const response = await fetch('/api/generate-llms', {
-                method: 'POST',
-                headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                },
-                body: JSON.stringify({}),
-            });
+                const response = await fetch('/api/generate', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'text/markdown',
+                    },
+                });
 
-            if (!response.ok) {
-                throw new Error('Request failed');
-            }
+                if (!response.ok) {
+                    throw new Error('Request failed');
+                }
 
-            const data = await response.json();
-            this.message = data.message ?? 'LLMs.txt generated!';
+                const markdown = await response.text();
+
+                // For now, just log the markdown and show a success message.
+                console.log(markdown);
+                this.message = 'LLMs.txt generated!';
             } catch (error) {
-            console.error(error);
-            this.message = 'Something went wrong while generating.';
+                console.error(error);
+                this.message = 'Something went wrong while generating.';
+            } finally {
+                this.state = 'init';
             }
         }
     }
