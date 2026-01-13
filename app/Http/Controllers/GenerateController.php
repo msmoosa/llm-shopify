@@ -34,9 +34,13 @@ class GenerateController extends Controller
         }
 
         $shopUrl = 'https://' . $shop->getDomain()->toNative();
+        $shopDomain = $shop->getDomain()->toNative();
         $markdown = $this->buildMarkdown($shopData, $products, $shopUrl);
         
-        return $this->saveMarkdownFile($shop->id, $markdown);
+        // Create redirect URL in Shopify
+        $this->createRedirectUrl($api, $shopDomain);
+        
+        return $this->saveMarkdownFile($shopDomain, $shop->id, $markdown);
     }
 
     /**
@@ -91,7 +95,30 @@ class GenerateController extends Controller
             throw new \Exception('Error fetching shop information: ' . ($shopResult['body'] ?? 'Unknown error'));
         }
 
-        return $shopResult['body']['shop'] ?? [];
+        // Handle ResponseAccess object or array
+        $body = $shopResult['body'] ?? null;
+        
+        // If body is a ResponseAccess object, convert to array
+        if (is_object($body) && method_exists($body, 'toArray')) {
+            $body = $body->toArray();
+        }
+        
+        // Extract shop data from body array
+        if (is_array($body)) {
+            $shop = $body['shop'] ?? null;
+            
+            // If shop is still a ResponseAccess object, convert it
+            if (is_object($shop) && method_exists($shop, 'toArray')) {
+                return $shop->toArray();
+            }
+            
+            // If shop is already an array, return it
+            if (is_array($shop)) {
+                return $shop;
+            }
+        }
+
+        return [];
     }
 
     /**
@@ -118,7 +145,19 @@ class GenerateController extends Controller
             throw new \Exception('Error fetching products: ' . $errorMessage);
         }
 
-        return $productsResult['body']['products'] ?? [];
+        $products = $productsResult['body']['products'] ?? null;
+        
+        // Convert ResponseAccess to array if needed
+        if (is_object($products) && method_exists($products, 'toArray')) {
+            return $products->toArray();
+        }
+        
+        // If it's already an array, return it
+        if (is_array($products)) {
+            return $products;
+        }
+
+        return [];
     }
 
     /**
@@ -317,7 +356,7 @@ class GenerateController extends Controller
     /**
      * Save the markdown content to a file in storage.
      */
-    protected function saveMarkdownFile(int $shopId, string $markdown)
+    protected function saveMarkdownFile(string $shopDomain, int $shopId, string $markdown)
     {
         $filename = "llm/{$shopId}.txt";
         
@@ -329,6 +368,7 @@ class GenerateController extends Controller
                 'message' => 'LLMs.txt file generated successfully',
                 'filename' => basename($filename),
                 'path' => Storage::path($filename),
+                'redirect_url' => 'https://' . $shopDomain . ("/llms.txt"),
             ], 200);
         } catch (\Exception $e) {
             Log::error('Error saving LLMs.txt file', [
@@ -349,7 +389,7 @@ class GenerateController extends Controller
      */
     public function show(Request $request, IShopQuery $shopQuery)
     {
-        $shopDomain = $request->input('shop_domain');
+        $shopDomain = $request->input('shop');
         
         if (empty($shopDomain)) {
             return response('shop_domain parameter is required', 400)
@@ -386,6 +426,59 @@ class GenerateController extends Controller
 
             return response('Error retrieving file: ' . $e->getMessage(), 500)
                 ->header('Content-Type', 'text/plain');
+        }
+    }
+
+    /**
+     * Create or update redirect URL in Shopify to point llms.txt to our endpoint.
+     */
+    protected function createRedirectUrl($api, string $shopDomain): void
+    {
+        try {
+            // Build the target URL - using app/sellgpt/llms as requested
+            $targetUrl = 'https://' . $shopDomain . ("/apps/sellgpt/llms");
+            
+            // First, check if redirect already exists
+            $existingRedirects = $api->rest('GET', '/admin/redirects.json', [
+                'path' => 'llms.txt',
+                'limit' => 1,
+            ]);
+
+            $redirectId = null;
+            if (isset($existingRedirects['body']['redirects']) && !empty($existingRedirects['body']['redirects'])) {
+                $redirectId = $existingRedirects['body']['redirects'][0]['id'] ?? null;
+            }
+
+            $redirectData = [
+                'redirect' => [
+                    'path' => '/llms.txt',
+                    'target' => $targetUrl,
+                ],
+            ];
+
+            if ($redirectId) {
+                // Update existing redirect
+                $api->rest('PUT', "/admin/redirects/{$redirectId}.json", $redirectData);
+                Log::info('Updated existing Shopify redirect', [
+                    'redirect_id' => $redirectId,
+                    'path' => '/llms.txt',
+                    'target' => $targetUrl,
+                ]);
+            } else {
+                // Create new redirect
+                $result = $api->rest('POST', '/admin/redirects.json', $redirectData);
+                Log::info('Created Shopify redirect', [
+                    'path' => '/llms.txt',
+                    'target' => $targetUrl,
+                    'result' => $result['body'] ?? null,
+                ]);
+            }
+        } catch (\Exception $e) {
+            // Log error but don't fail the entire generation process
+            Log::warning('Failed to create Shopify redirect', [
+                'shop_domain' => $shopDomain,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 }

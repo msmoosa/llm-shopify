@@ -13,3 +13,4 @@ Route::get('/api/generate', [GenerateController::class, 'index'])
 
 // Endpoint to retrieve LLMs.txt file by shop domain
 Route::get('/llms', [GenerateController::class, 'show']);
+Route::get('/app/sellgpt/llms', [GenerateController::class, 'show']);

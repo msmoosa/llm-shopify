@@ -35,30 +35,41 @@
         <!-- If dismissed, use local storage or a database entry to avoid showing this section again to the same user. -->
         <!-- === -->
         <s-section id="main">
-            <s-grid gridTemplateColumns="1fr auto" gap="small-400" alignItems="start">
-                <s-grid gridTemplateColumns="@container (inline-size <= 480px) 1fr, auto auto" gap="base"
-                    alignItems="center">
-                    <s-grid gap="small-100">
-                        <s-heading>Ready to boost your sales from ChatGPT?</s-heading>
-                        <s-paragraph>
-                            @{{ message }}
-                            
-                        </s-paragraph>
-                        <s-stack direction="inline" gap="small-200">
-                            <s-button variant="primary" :loading="isLoading" @click="generate()"> Generate </s-button>
-                            <s-button variant="neutral"> Learn more </s-button>
-                        </s-stack>
-                        
-                    </s-grid>
-                    
-                    <s-box maxInlineSize="400px" borderRadius="base" overflow="hidden">
-                        <s-image src="/images/boostsales.jpg" alt="Customize checkout illustration" aspectRatio="1/0.5">
-                        </s-image>
-                    </s-box>
-                </s-grid>
+  <s-box style="max-width:50%; margin:0 auto;">
+    
+    <s-grid gridTemplateColumns="1fr auto" gap="small-400" alignItems="start">
+      <s-grid
+        gridTemplateColumns="@container (inline-size <= 480px) 1fr, auto auto"
+        gap="base"
+        alignItems="center"
+      >
+        <s-grid gap="small-100">
+          <s-heading>Ready to boost your sales from ChatGPT?</s-heading>
 
-            </s-grid>
-        </s-section>
+          <s-paragraph>
+            @{{ message }}
+          </s-paragraph>
+
+          <s-stack direction="inline" gap="small-200">
+            <s-button variant="primary" :loading="isLoading" @click="generate()">
+              Generate
+            </s-button>
+            <s-button variant="neutral">Learn more</s-button>
+          </s-stack>
+        </s-grid>
+
+        <s-box maxInlineSize="400px" borderRadius="base" overflow="hidden">
+          <s-image
+            src="/images/boostsales.jpg"
+            alt="Customize checkout illustration"
+            aspectRatio="1/0.5"
+          ></s-image>
+        </s-box>
+      </s-grid>
+    </s-grid>
+
+  </s-box>
+</s-section>
     </s-page>
 </body>
 
@@ -99,12 +110,11 @@
 
                 // For now, just log the markdown and show a success message.
                 console.log(markdown);
-                this.message = 'LLMs.txt generated!';
+                this.message = 'Your LLMs.txt is generated! ChatGPT and other chat tools can now discover products';
+                this.state = 'generated';
             } catch (error) {
                 console.error(error);
                 this.message = 'Something went wrong while generating.';
-            } finally {
-                this.state = 'init';
             }
         }
     }
