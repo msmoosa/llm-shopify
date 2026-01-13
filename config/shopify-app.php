@@ -363,7 +363,7 @@ return [
             // \App\Listeners\MyListener::class,
         ],
         \Osiset\ShopifyApp\Messaging\Events\AppUninstalledEvent::class => [
-            // \App\Listeners\MyListener::class,
+            \App\Listeners\HandleAppUninstalled::class,
         ],
         \Osiset\ShopifyApp\Messaging\Events\PlanActivatedEvent::class => [
             // \App\Listeners\MyListener::class,
@@ -385,6 +385,10 @@ return [
     */
 
     'webhooks' => [
+        [
+            'topic' => 'app/uninstalled',
+            'address' => env('APP_URL', 'https://sellgpt.fr33.tv').'/webhook/app-uninstalled',
+        ],
         /*
             [
                 'topic' => env('SHOPIFY_WEBHOOK_1_TOPIC', 'ORDERS_CREATE'),
