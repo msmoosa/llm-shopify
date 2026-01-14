@@ -389,6 +389,19 @@ return [
             'topic' => 'app/uninstalled',
             'address' => env('APP_URL', 'https://sellgpt.fr33.tv').'/webhook/app-uninstalled',
         ],
+        // GDPR Compliance Webhooks
+        [
+            'topic' => 'customers/data_request',
+            'address' => env('APP_URL', 'https://sellgpt.fr33.tv').'/webhook/customers-data-request',
+        ],
+        [
+            'topic' => 'customers/redact',
+            'address' => env('APP_URL', 'https://sellgpt.fr33.tv').'/webhook/customers-redact',
+        ],
+        [
+            'topic' => 'shop/redact',
+            'address' => env('APP_URL', 'https://sellgpt.fr33.tv').'/webhook/shop-redact',
+        ],
         /*
             [
                 'topic' => env('SHOPIFY_WEBHOOK_1_TOPIC', 'ORDERS_CREATE'),
