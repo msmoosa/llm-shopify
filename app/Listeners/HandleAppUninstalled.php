@@ -5,6 +5,7 @@ namespace App\Listeners;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Osiset\ShopifyApp\Messaging\Events\AppUninstalledEvent;
+use App\Models\User;
 
 class HandleAppUninstalled
 {
@@ -24,7 +25,10 @@ class HandleAppUninstalled
         $shop = $event->shop;
         $shopId = $shop->getId()->toNative();
         $filename = "llm/{$shopId}.txt";
-        \App\Models\User::find($shopId)->delete();
+        $user = User::find($shopId);
+        $user->llm_generated_at = null;
+        $user->save();
+        $user->delete();
 
         try {
             // Delete the LLMs.txt file if it exists

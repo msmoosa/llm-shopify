@@ -445,7 +445,7 @@ class GenerateController extends Controller
             
             // First, check if redirect already exists
             $existingRedirects = $api->rest('GET', '/admin/redirects.json', [
-                'path' => 'llms.txt',
+                'path' => '/llms.txt',
                 'limit' => 1,
             ]);
 
