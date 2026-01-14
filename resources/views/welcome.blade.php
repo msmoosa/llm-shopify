@@ -47,14 +47,18 @@
           <s-heading>Ready to boost your sales from ChatGPT?</s-heading>
 
           <s-paragraph>
-            @{{ message }}
+            @{{  message }}
           </s-paragraph>
 
           <s-stack direction="inline" gap="small-200">
             <s-button variant="primary" :loading="isLoading" @click="generate()">
-              Generate
+              @if($llm_generated)
+                Regenerate
+              @else
+                Generate
+              @endif
             </s-button>
-            <s-button variant="neutral">Learn more</s-button>
+            <s-button variant="neutral" @click="learnMore()">Learn more</s-button>
           </s-stack>
         </s-grid>
 
@@ -73,7 +77,6 @@
     </s-page>
 </body>
 
-<script src="/js/welcome.js"></script>
 <script>
     const { createApp, ref } = Vue
 
@@ -81,12 +84,22 @@
     data() {
       return {
         state: 'init',
-        message: 'Start by generating your LLMs.txt file that helps chat bots discover your website and products.'
+        llmGenerated: {{ $llm_generated }},
+        llmGeneratedAt: '{{ $llm_generated_at }}',
       }
     },
     computed: {
         isLoading() {
             return this.state == 'loading'
+        },
+        message() {
+            if (this.state == 'loading') {
+                return 'Generating LLMs.txt which will help chat bots discover your products.';
+            } else if (this.llmGenerated) {
+                return 'Your LLMs.txt file has been generated! ChatGPT and other chat tools can now discover your products.';
+            } else {
+                return 'Start by generating your LLMs.txt file that helps chat bots discover your website and products.';
+            }
         }
     },
     methods: {
@@ -98,7 +111,7 @@
                 const response = await fetch('/api/generate', {
                     method: 'GET',
                     headers: {
-                        'Accept': 'text/markdown',
+                        'Accept': 'application/json',
                     },
                 });
 
@@ -106,16 +119,22 @@
                     throw new Error('Request failed');
                 }
 
-                const markdown = await response.text();
+                const result = await response.json();
 
-                // For now, just log the markdown and show a success message.
-                console.log(markdown);
-                this.message = 'Your LLMs.txt is generated! ChatGPT and other chat tools can now discover products';
-                this.state = 'generated';
+                // Show success message
+                if (result.success) {
+                  this.llmGenerated = true;
+                  this.state = 'generated';
+                } else {
+                  throw new Error(result.message || 'Request failed');
+                }
             } catch (error) {
                 console.error(error);
                 this.message = 'Something went wrong while generating.';
             }
+        },
+        learnMore() {
+            window.open('https://llmstxt.org/', '_blank');
         }
     }
   }).mount('#app')

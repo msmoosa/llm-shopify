@@ -40,7 +40,7 @@ class GenerateController extends Controller
         // Create redirect URL in Shopify
         $this->createRedirectUrl($api, $shopDomain);
         
-        return $this->saveMarkdownFile($shopDomain, $shop->id, $markdown);
+        return $this->saveMarkdownFile($shopDomain, $shop, $markdown);
     }
 
     /**
@@ -356,12 +356,17 @@ class GenerateController extends Controller
     /**
      * Save the markdown content to a file in storage.
      */
-    protected function saveMarkdownFile(string $shopDomain, int $shopId, string $markdown)
+    protected function saveMarkdownFile(string $shopDomain, $shop, string $markdown)
     {
+        $shopId = $shop->getId()->toNative();
         $filename = "llm/{$shopId}.txt";
         
         try {
             Storage::put($filename, $markdown);
+            
+            // Update the shop's llm_generated_at field
+            $shop->llm_generated_at = now();
+            $shop->save();
             
             return response()->json([
                 'success' => true,
